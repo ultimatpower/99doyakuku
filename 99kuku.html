@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ドヤ顔九九（くく）道場</title>
+    <style>
+        /* =======================================
+           1. CSS: デザインとレイアウト
+           ======================================= */
+        :root {
+            --main-color: #e6006e; /* 桜色に近いピンク */
+            --accent-color: #ff9900; /* 勝利時のアクセント */
+            --bg-color: #fff9e6; /* 和風の淡い背景 */
+            --font-main: "Impact", "Arial Black", sans-serif;
+            --font-ja: "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+        }
+
+        body {
+            font-family: var(--font-ja);
+            background-color: var(--bg-color);
+            color: #333;
+            margin: 0;
+            padding: 10px;
+            text-align: center;
+            line-height: 1.6;
+            touch-action: manipulation;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px 10px;
+            border: 8px solid var(--main-color);
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        /* タイトル */
+        h1 {
+            font-family: var(--font-main);
+            color: var(--main-color);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            letter-spacing: 3px;
+            text-shadow: 3px 3px 0 #ffe0f0;
+        }
+
+        /* ステータスボード */
+        .status-board {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            margin-bottom: 15px;
+            border-bottom: 3px dashed #ccc;
+        }
+
+        .status-item {
+            font-size: 1em;
+            font-weight: bold;
+        }
+
+        .status-value {
+            font-size: 1.5em;
+            color: var(--accent-color);
+            font-family: var(--font-main);
+        }
+
+        /* 問題表示 */
+        #question-area {
+            font-size: 3.5em;
+            font-family: var(--font-main);
+            color: #333;
+            margin: 20px 0;
+            min-height: 60px;
+        }
+
+        #question-area .num {
+            font-size: 1.2em; 
+            color: #333;
+            padding: 0 10px;
+        }
+
+        #question-area .op {
+            font-size: 0.8em; 
+            color: red;
+            padding: 0 5px;
+        }
+
+        /* 回答表示エリア */
+        #answer-display {
+            font-size: 4em;
+            height: 1.5em;
+            line-height: 1.5em;
+            border: 5px solid var(--main-color);
+            border-radius: 10px;
+            margin: 20px auto;
+            width: 90%;
+            max-width: 300px;
+            background-color: #fcfcfc;
+            text-align: center;
+            letter-spacing: 5px;
+            overflow: hidden;
+            font-family: var(--font-main);
+        }
+
+        /* テンキーエリア */
+        #keypad-area {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 90%;
+            max-width: 400px;
+            margin: 0 auto 20px;
+        }
+
+        .keypad-button {
+            padding: 15px;
+            font-size: 2em;
+            height: 1.8em;
+            font-family: var(--font-main);
+            background-color: #ffcc00; 
+            color: #333;
+            border: 3px solid #cc9900;
+            border-radius: 10px;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.1s;
+        }
+
+        .keypad-button:active {
+            transform: scale(0.95);
+        }
+
+        .keypad-submit {
+            grid-column: span 2;
+            background-color: var(--main-color);
+            color: white;
+            font-size: 1.5em;
+            border: 3px solid #990033;
+        }
+
+        /* 開始前設定エリア */
+        #pre-start-settings {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 2px dashed var(--accent-color);
+            border-radius: 10px;
+        }
+
+        #level-select {
+            padding: 10px;
+            font-size: 1.2em;
+            border: 2px solid var(--main-color);
+            border-radius: 5px;
+            margin-left: 10px;
+        }
+
+        /* ボタン共通 */
+        button {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            background-color: var(--main-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        #lang-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #333;
+            font-size: 0.8em;
+            padding: 5px 8px;
+        }
+
+        /* フィードバック (ドヤッ！) */
+        #feedback-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none; 
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.95);
+            z-index: 100;
+        }
+
+        .do-ya-emoji {
+            font-size: 5em;
+            animation: zoomIn 0.5s ease-out;
+            margin-bottom: 20px;
+        }
+        
+        .effect-emoji {
+            font-size: 3em;
+            animation: fireworks 1s ease-out;
+            margin: 10px 0;
+            text-shadow: 0 0 10px #ff00ff;
+        }
+
+        @keyframes zoomIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            80% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes fireworks {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.5); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+
+        /* 終了画面 */
+        #result-screen {
+            display: none;
+            padding: 30px 10px;
+            border: 5px solid gold;
+            background-color: #fffacd;
+            margin-top: 20px;
+        }
+
+        .result-message {
+            font-size: 1.8em;
+            color: #a52a2a;
+            font-weight: bold;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <button id="lang-toggle" onclick="toggleLanguage()">保護者向け (中文) 切替</button>
+
+    <div class="container">
+        <h1 id="title">ドヤ顔九九（くく）道場</h1>
+        
+        <div class="status-board">
+            <div class="status-item"><span data-key="score-text">得点</span>: <span id="score" class="status-value">0</span> <span data-key="point">点</span></div>
+            <div class="status-item"><span data-key="timer-text">制限時間</span>: <span id="timer" class="status-value">60</span> <span data-key="sec">秒</span></div>
+            <div class="status-item"><span data-key="level-text">現在の段位</span>: <span id="level" class="status-value">1 の段</span></div>
+        </div>
+
+        <div id="game-area">
+            
+            <div id="pre-start-settings">
+                <label for="level-select" data-key="select-level">挑戦する段位を選ぶ:</label>
+                <select id="level-select">
+                    </select>
+            </div>
+            
+            <p id="question-text" data-key="task">今日の課題:</p>
+            <div id="question-area">
+                </div>
+
+            <div id="answer-display"></div>
+
+            <p id="message-area" style="font-size:1.2em; color: green; font-weight: bold;"></p>
+
+            <button id="start-button" onclick="startGame()"><span data-key="start">挑戦開始！</span></button>
+
+            <div id="keypad-area" style="display: none;">
+                <button class="keypad-button" onclick="appendAnswer(7)">7</button>
+                <button class="keypad-button" onclick="appendAnswer(8)">8</button>
+                <button class="keypad-button" onclick="appendAnswer(9)">9</button>
+                <button class="keypad-button" onclick="appendAnswer(4)">4</button>
+                <button class="keypad-button" onclick="appendAnswer(5)">5</button>
+                <button class="keypad-button" onclick="appendAnswer(6)">6</button>
+                <button class="keypad-button" onclick="appendAnswer(1)">1</button>
+                <button class="keypad-button" onclick="appendAnswer(2)">2</button>
+                <button class="keypad-button" onclick="appendAnswer(3)">3</button>
+                <button class="keypad-button" onclick="clearAnswer()"><span data-key="clear">消去</span></button>
+                <button class="keypad-button" onclick="appendAnswer(0)">0</button>
+                <button class="keypad-button keypad-submit" onclick="checkAnswer()"><span data-key="submit">答えろ！</span></button>
+            </div>
+        </div>
+
+        <div id="result-screen">
+            <h2 class="result-message" data-key="result-title">挑戦終了！</h2>
+            <p data-key="result-score-text">あなたの最終得点: <span id="final-score">0</span> 点</p>
+            <p id="level-reward-message"></p>
+            <button id="restart-button" onclick="resetGame()"><span data-key="restart">再挑戦！</span></button>
+        </div>
+
+    </div>
+
+    <div id="feedback-area">
+        <div class="do-ya-emoji" id="do-ya-face-content">
+            (*`ω´*) ドヤッ! ✨
+        </div>
+        
+        <p class="do-ya-message" data-key="great-answer" style="font-size: 2em; color: var(--main-color); font-weight: bold;"></p>
+        
+        <div class="effect-emoji" id="effect-content">
+            🌸🎆🎇🥳
+        </div>
+    </div>
+
+    <script>
+        // =======================================
+        // 2. JavaScript: ゲームロジック
+        // =======================================
+
+        let score = 0;
+        let currentLevel = 1; 
+        let currentQuestion = { A: 0, B: 0, answer: 0 };
+        let timer = 60;
+        let timerInterval;
+        let isGameActive = false;
+        let correctStreak = 0; 
+        let currentAnswer = ""; 
+        const LEVEL_UP_THRESHOLD = 10; 
+        
+        // --- 演出用Emoji/顔文字の定義 ---
+        const EMOJI_FEEDBACK = {
+            'do-ya-ja': "(*`ω´*) ドヤッ! ✨",
+            'do-ya-zh': "(ง •̀_•́)ง 厉害! ✨",
+            'effect-firework': "🎆🎇🥳🎉🎊🌸",
+            'effect-sakura': "🌸🌸🌸満開🌸🌸🌸",
+        };
+
+
+        // 日本語と中国語の翻訳データ
+        const translations = {
+            ja: {
+                'title': 'ドヤ顔九九（くく）道場',
+                'lang-toggle': '保護者向け (中文) 切替',
+                'score-text': '得点',
+                'point': '点',
+                'timer-text': '制限時間',
+                'sec': '秒',
+                'level-text': '現在の段位',
+                'task': '今日の課題:',
+                'submit': '答えろ！',
+                'start': '挑戦開始！',
+                'restart': '再挑戦！',
+                // 'do-ya' はDOM直接更新
+                'great-answer': '大正解！',
+                'result-title': '挑戦終了！',
+                'result-score-text': 'あなたの最終得点:',
+                'correct-streak': '連続正解',
+                'clear': '段位クリア！',
+                'select-level': '挑戦する段位を選ぶ:',
+                'clear': '消去',
+                '7-reward': '七の段クリア！虹色トロフィー獲得！🏆🌈',
+                '8-reward': '八の段クリア！宇宙最強マスターバッジ獲得！👑🚀',
+                '9-reward': '九九マスターの証を獲得！おめでとう！🏅🌟',
+            },
+            zh: {
+                'title': '得意脸九九挑战馆',
+                'lang-toggle': '家长看 (日文) 切换',
+                'score-text': '得分',
+                'point': '分',
+                'timer-text': '限制时间',
+                'sec': '秒',
+                'level-text': '当前段位',
+                'task': '今日的任务:',
+                'submit': '回答！',
+                'start': '开始挑战！',
+                'restart': '重新挑战！',
+                // 'do-ya' はDOM直接更新
+                'great-answer': '回答正确！',
+                'result-title': '挑战结束！',
+                'result-score-text': '你的最终得分:',
+                'correct-streak': '连续答对',
+                'clear': '段位通关！',
+                'select-level': '选择挑战的段位:',
+                'clear': '清除',
+                '7-reward': '七段通关！获得虹色奖杯！🏆🌈',
+                '8-reward': '八段通关！获得宇宙最强徽章！👑🚀',
+                '9-reward': '获得九九大师的证明！恭喜你！🏅🌟',
+            }
+        };
+
+        let currentLang = 'ja';
+
+        // 言語切り替え
+        function toggleLanguage() {
+            currentLang = (currentLang === 'ja') ? 'zh' : 'ja';
+            const langData = translations[currentLang];
+
+            // テキストの切り替え
+            document.getElementById('title').textContent = langData['title'];
+            document.getElementById('lang-toggle').textContent = langData['lang-toggle'];
+
+            // data-key属性を持つ要素の切り替え
+            document.querySelectorAll('[data-key]').forEach(el => {
+                const key = el.getAttribute('data-key');
+                if (langData[key]) {
+                    el.textContent = langData[key];
+                }
+            });
+
+            // 段位表示の更新
+            updateLevelDisplay();
+        }
+
+        // 段位表示の更新
+        function updateLevelDisplay() {
+             document.getElementById('level').textContent = currentLevel + (currentLang === 'ja' ? ' の段' : ' 段');
+        }
+
+        // 段位選択肢の生成
+        function setupLevelSelect() {
+            const select = document.getElementById('level-select');
+            select.innerHTML = ''; 
+
+            for (let i = 1; i <= 9; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `${i} の段`;
+                select.appendChild(option);
+            }
+            select.value = 1; 
+        }
+
+        // 初期化
+        function resetGame() {
+            score = 0;
+            timer = 60;
+            currentAnswer = "";
+            correctStreak = 0;
+            isGameActive = false;
+            
+            document.getElementById('score').textContent = score;
+            document.getElementById('timer').textContent = timer;
+            document.getElementById('message-area').textContent = '';
+            document.getElementById('result-screen').style.display = 'none';
+            document.getElementById('game-area').style.display = 'block';
+            
+            document.getElementById('pre-start-settings').style.display = 'block';
+            document.getElementById('start-button').style.display = 'block';
+            document.getElementById('keypad-area').style.display = 'none';
+            document.getElementById('answer-display').textContent = "";
+
+            clearInterval(timerInterval);
+            updateQuestionDisplay(0, 0); 
+            currentLevel = parseInt(document.getElementById('level-select').value);
+            updateLevelDisplay();
+        }
+
+        // ゲーム開始
+        function startGame() {
+            if (isGameActive) return;
+
+            currentLevel = parseInt(document.getElementById('level-select').value);
+            updateLevelDisplay();
+            
+            isGameActive = true;
+            document.getElementById('pre-start-settings').style.display = 'none';
+            document.getElementById('start-button').style.display = 'none';
+            document.getElementById('keypad-area').style.display = 'grid'; 
+            document.getElementById('answer-display').textContent = "";
+            
+            nextQuestion();
+            
+            timerInterval = setInterval(() => {
+                timer--;
+                document.getElementById('timer').textContent = timer;
+                if (timer <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        // 問題の生成
+        function nextQuestion() {
+            const A = currentLevel; 
+            const B = Math.floor(Math.random() * 9) + 1; 
+            const answer = A * B;
+            
+            currentQuestion = { A, B, answer };
+            updateQuestionDisplay(A, B);
+            currentAnswer = "";
+            document.getElementById('answer-display').textContent = "";
+        }
+
+        // 問題表示の更新 
+        function updateQuestionDisplay(A, B) {
+             document.getElementById('question-area').innerHTML = 
+                ` <span class="num">${A}</span> 
+                  <span class="op">×</span> 
+                  <span class="num">${B}</span> 
+                  <span class="op">=</span> 
+                  <span class="num">?</span> 
+                `;
+        }
+
+        // タッチ操作: 数字入力
+        function appendAnswer(num) {
+            if (!isGameActive) return;
+            if (currentAnswer.length >= 2) return; 
+
+            currentAnswer += num.toString();
+            document.getElementById('answer-display').textContent = currentAnswer;
+        }
+
+        // タッチ操作: 消去
+        function clearAnswer() {
+            currentAnswer = "";
+            document.getElementById('answer-display').textContent = "";
+        }
+
+        // 答えのチェック
+        function checkAnswer() {
+            if (!isGameActive) return;
+
+            const userAnswer = parseInt(currentAnswer);
+
+            if (currentAnswer === "") {
+                document.getElementById('message-area').textContent = '答えを入力してください！';
+                return;
+            }
+
+            if (userAnswer === currentQuestion.answer) {
+                // 正解
+                score += 10;
+                correctStreak++;
+                document.getElementById('score').textContent = score;
+                document.getElementById('message-area').textContent = `${translations[currentLang]['correct-streak']}: ${correctStreak}`;
+                
+                showFeedback(true);
+                
+                if (correctStreak > 0 && correctStreak % LEVEL_UP_THRESHOLD === 0) {
+                    document.getElementById('message-area').textContent += ` ${translations[currentLang]['clear']} (${LEVEL_UP_THRESHOLD}連続正解!)`;
+                }
+
+                setTimeout(nextQuestion, 1500); 
+            } else {
+                // 不正解
+                correctStreak = 0; 
+                document.getElementById('message-area').textContent = 'むむむ... 惜しい！';
+                showFeedback(false);
+                setTimeout(nextQuestion, 500); 
+            }
+        }
+
+        // 正解/不正解時のフィードバック演出 (Emojiと顔文字に修正)
+        function showFeedback(isCorrect) {
+            const feedbackArea = document.getElementById('feedback-area');
+            const doYaContent = document.getElementById('do-ya-face-content');
+            const message = document.querySelector('.do-ya-message');
+            const effectContent = document.getElementById('effect-content');
+
+            if (isCorrect) {
+                feedbackArea.style.display = 'flex';
+                
+                // ドヤ顔の顔文字を言語に合わせて設定
+                doYaContent.innerHTML = currentLang === 'ja' ? EMOJI_FEEDBACK['do-ya-ja'] : EMOJI_FEEDBACK['do-ya-zh'];
+                message.textContent = translations[currentLang]['great-answer'];
+                
+                // 桜と花火のエフェクトをランダムに表示
+                effectContent.textContent = Math.random() > 0.5 ? EMOJI_FEEDBACK['effect-firework'] : EMOJI_FEEDBACK['effect-sakura'];
+
+                setTimeout(() => {
+                    feedbackArea.style.display = 'none';
+                }, 1500); 
+            } else {
+                // 不正解の簡易演出
+                document.getElementById('message-area').textContent = 'むむむ... 惜しい！';
+            }
+        }
+
+        // ゲーム終了
+        function endGame() {
+            clearInterval(timerInterval);
+            isGameActive = false;
+            
+            document.getElementById('keypad-area').style.display = 'none'; 
+            document.getElementById('game-area').style.display = 'none';
+            document.getElementById('result-screen').style.display = 'block';
+            document.getElementById('final-score').textContent = score;
+
+            // 最終的な段位特典メッセージを表示
+            const rewardMessage = document.getElementById('level-reward-message');
+            rewardMessage.innerHTML = '';
+            
+            const selectedLevel = parseInt(document.getElementById('level-select').value);
+            
+            if (selectedLevel === 7) {
+                 rewardMessage.innerHTML += `<p style="color:red; font-size:1.5em;">${translations[currentLang]['7-reward']}</p>`;
+            }
+            if (selectedLevel === 8) {
+                 rewardMessage.innerHTML += `<p style="color:gold; font-size:1.5em;">${translations[currentLang]['8-reward']}</p>`;
+            }
+            if (selectedLevel === 9) {
+                 rewardMessage.innerHTML += `<p style="color:purple; font-size:1.5em;">${translations[currentLang]['9-reward']}</p>`;
+            }
+            if (selectedLevel < 7) {
+                 rewardMessage.innerHTML += `<p style="font-size:1.2em;">次は ${translations[currentLang]['7-reward']} を目指そう！</p>`;
+            }
+        }
+
+        // エンターキーを無効化 (タッチ操作優先のため)
+        document.addEventListener('keypress', function(e) {
+            if (isGameActive && e.key === 'Enter') {
+                e.preventDefault();
+                checkAnswer();
+            }
+        });
+
+        // 初期ロード時に実行
+        window.onload = function() {
+            setupLevelSelect(); 
+            resetGame();
+            // 初期表示を日本語にする
+            currentLang = 'zh'; 
+            toggleLanguage(); 
+        };
+    </script>
+
+</body>
+</html>
